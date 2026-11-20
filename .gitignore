@@ -1,0 +1,11 @@
+node_modules/
+.idea/
+dist/
+demo/*.mp4
+demo/*.gif
+# machine-local Restish profile (recreate with: npm run cli:connect)
+cli/restish.json
+# Restish runtime state: spec cache, OAuth tokens, lock files (machine-local, secret)
+cli/cache/
+cli/tokens.cbor
+cli/*.lock

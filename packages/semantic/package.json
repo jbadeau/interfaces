@@ -1,0 +1,12 @@
+{
+  "name": "@demo/semantic",
+  "private": true,
+  "type": "module",
+  "description": "Semantic validation: evaluates CEL rules declared in the OpenAPI spec (x-validations / x-preconditions). Shared by service and UI.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@marcbachmann/cel-js": "^8.0.0"
+  }
+}

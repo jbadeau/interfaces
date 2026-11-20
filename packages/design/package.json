@@ -1,0 +1,15 @@
+{
+  "name": "@demo/design",
+  "private": true,
+  "type": "module",
+  "description": "Design system shared by every interface: tokens + atoms, rendered for web (React), terminal (ANSI) and text (MCP).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.tsx",
+    "./terminal": "./src/terminal.ts",
+    "./text": "./src/text.ts",
+    "./tokens.json": "./src/tokens.json"
+  },
+  "peerDependencies": { "react": ">=18" },
+  "peerDependenciesMeta": { "react": { "optional": true } }
+}

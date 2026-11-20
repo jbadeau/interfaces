@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# `todos` CLI: a branded wrapper around Restish. Commands, flags, help text and
+# validation come from the OpenAPI spec at runtime (Restish). Output is rendered
+# with the shared design atoms (packages/design) when writing to a terminal.
+#
+# Plain Restish output: pass -o <format>, pipe the output, or set TODOS_RAW=1.
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export RSH_CONFIG="$ROOT/cli/restish.json"
+
+raw=${TODOS_RAW:-}
+[[ -t 1 || -n "${FORCE_COLOR:-}" ]] || raw=1
+[[ $# -eq 0 ]] && raw=1
+for a in "$@"; do
+  case "$a" in -o|--rsh-output-format*|-f|--rsh-filter*|-h|--help|--help-all) raw=1 ;; esac
+done
+[[ -n "$raw" ]] && exec restish todos "$@"
+
+out=$(restish todos "$@" -o json 2>&1); code=$?
+printf '%s' "$out" | FORCE_COLOR=1 node --no-warnings "$ROOT/cli/render.ts" "$1"
+rc=${PIPESTATUS[1]}
+exit $(( code ? code : rc ))

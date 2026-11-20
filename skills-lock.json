@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "openscreen-demo": {
+      "source": "getopenscreen/openscreen",
+      "commit": "01914391ad244d1152856ea9f0a249fb3dc4f713",
+      "sourceType": "github",
+      "skillPath": "plugin/skills/openscreen-demo/SKILL.md",
+      "computedHash": "97086090cbbfab0b88b828d5de42410dbd7b3900cfb6ecb7102d89bd9ce92c23"
+    }
+  }
+}

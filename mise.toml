@@ -1,0 +1,90 @@
+[tools]
+node = "24.22.2"
+"aqua:rest-sh/restish" = "latest"
+"github:oasdiff/oasdiff" = "1.39.0"
+"aqua:grafana/k6" = "2.3.0"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin", "{{config_root}}/bin"]
+
+# ---------------------------------------------------------------- setup ---
+[tasks.install]
+description = "Install npm dependencies"
+run = "npm install"
+sources = ["package.json", "*/package.json", "*/*/package.json"]
+outputs = ["node_modules/.package-lock.json"]
+
+[tasks.setup]
+description = "Install, generate and run all checks"
+run = ["mise run install", "mise run check"]
+
+# ------------------------------------------------------------- contract ---
+[tasks.generate]
+description = "Generate dereferenced spec + TS types from api/openapi.yaml"
+dir = "{{config_root}}/packages/contract"
+run = [
+  "redocly bundle ../../api/openapi.yaml --dereferenced -o generated/openapi.json",
+  "openapi-typescript ../../api/openapi.yaml -o generated/schema.d.ts",
+]
+sources = ["{{config_root}}/api/openapi.yaml"]
+outputs = ["{{config_root}}/packages/contract/generated/openapi.json", "{{config_root}}/packages/contract/generated/schema.d.ts"]
+
+[tasks.lint]
+description = "Lint the spec against API standards (Spectral, incl. CEL + tone checks)"
+run = "spectral lint api/openapi.yaml --ruleset api/.spectral.mjs --fail-severity warn"
+
+[tasks.breaking]
+description = "Fail on breaking spec changes vs origin/main or main (oasdiff)"
+run = "bash scripts/breaking.sh"
+
+[tasks.typecheck]
+description = "Type-check all packages"
+depends = ["generate"]
+run = "tsc -p tsconfig.json"
+
+[tasks.test]
+description = "Semantic validation tests"
+depends = ["generate"]
+dir = "{{config_root}}/packages/semantic"
+run = "node --test --experimental-strip-types src/*.test.ts"
+
+[tasks.e2e]
+description = "End-to-end tests against the running API (every response checked against the spec)"
+run = "node --test --experimental-strip-types --no-warnings tests/e2e/*.test.ts"
+
+[tasks.load]
+description = "Load test the running API (k6): latency/throughput budgets, and graceful 429s under abuse"
+run = "k6 run --quiet tests/load/api.js"
+
+[tasks.check]
+description = "lint + typecheck + test"
+depends = ["lint", "typecheck", "test"]
+
+# ------------------------------------------------------------------ run ---
+[tasks."dev:api"]
+description = "Run the API on :8787 (watch mode)"
+depends = ["generate"]
+dir = "{{config_root}}/services/todos"
+run = "tsx watch src/server.ts"
+
+[tasks."dev:ui"]
+description = "Run the web UI on :5173"
+depends = ["generate"]
+dir = "{{config_root}}/ui"
+run = "vite --port 5173 --strictPort"
+
+[tasks.dev]
+description = "Run API + web UI"
+depends = ["dev:api", "dev:ui"]
+
+[tasks."cli:connect"]
+description = "Register the running API with Restish (then use: todos <command>)"
+run = "bash scripts/cli-connect.sh"
+
+[tasks.mcp]
+description = "Run the MCP server on stdio"
+run = "node --no-warnings mcp/src/server.ts"
+
+[tasks."demo:mcp"]
+description = "Show what an AI agent sees via MCP"
+run = "node scripts/mcp-demo.mjs"

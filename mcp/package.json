@@ -1,0 +1,14 @@
+{
+  "name": "@demo/mcp",
+  "private": true,
+  "type": "module",
+  "description": "Spec-driven MCP server: every operation with x-mcp: true becomes a tool at runtime.",
+  "bin": {
+    "todos-mcp": "./src/server.ts"
+  },
+  "dependencies": {
+    "@demo/contract": "*",
+    "@demo/design": "*",
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  }
+}

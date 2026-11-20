@@ -1,0 +1,17 @@
+{
+  "name": "@demo/contract",
+  "private": true,
+  "type": "module",
+  "description": "Generated from api/openapi.yaml: dereferenced spec + TS types + typed client. Do not edit generated/.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./async": "./src/async.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.82.0",
+    "openapi-typescript": "^7.13.0"
+  }
+}

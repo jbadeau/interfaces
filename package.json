@@ -1,0 +1,20 @@
+{
+  "name": "openapi-interfaces-demo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "ui",
+    "mcp"
+  ],
+  "devDependencies": {
+    "@marcbachmann/cel-js": "^8.0.0",
+    "@stoplight/spectral-cli": "^6.17.1",
+    "@stoplight/spectral-functions": "^1.10.1",
+    "@stoplight/spectral-rulesets": "^1.22.0",
+    "@types/node": "^24.0.0",
+    "playwright-core": "^1.65.1",
+    "typescript": "^5.9.3"
+  }
+}

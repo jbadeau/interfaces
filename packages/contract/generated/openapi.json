@@ -1,0 +1,5177 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Todos API",
+    "version": "1.0.0",
+    "description": "The classic Todos API, used to demonstrate one contract consumed by a\nservice, a React UI, a CLI and an MCP server.\n"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8787"
+    }
+  ],
+  "tags": [
+    {
+      "name": "todos",
+      "description": "Things to do."
+    },
+    {
+      "name": "operations",
+      "description": "Long-running operations, polled until done."
+    }
+  ],
+  "paths": {
+    "/todos": {
+      "get": {
+        "operationId": "listTodos",
+        "summary": "List todos",
+        "description": "Returns a page of todos, optionally filtered by status and priority.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of items per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status.",
+            "schema": {
+              "type": "string",
+              "title": "Status",
+              "enum": [
+                "open",
+                "done"
+              ],
+              "x-display": {
+                "atom": "badge",
+                "tones": {
+                  "open": "info",
+                  "done": "success"
+                }
+              }
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "description": "Filter by priority.",
+            "schema": {
+              "type": "string",
+              "title": "Priority",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "x-display": {
+                "atom": "badge",
+                "tones": {
+                  "low": "neutral",
+                  "medium": "warning",
+                  "high": "danger"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of todos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "title": "Todo",
+                        "allOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "title": "Title",
+                                "description": "What needs to be done.",
+                                "minLength": 1,
+                                "maxLength": 120
+                              },
+                              "description": {
+                                "type": "string",
+                                "title": "Description",
+                                "maxLength": 1000
+                              },
+                              "priority": {
+                                "default": "medium",
+                                "type": "string",
+                                "title": "Priority",
+                                "enum": [
+                                  "low",
+                                  "medium",
+                                  "high"
+                                ],
+                                "x-display": {
+                                  "atom": "badge",
+                                  "tones": {
+                                    "low": "neutral",
+                                    "medium": "warning",
+                                    "high": "danger"
+                                  }
+                                }
+                              },
+                              "dueDate": {
+                                "type": "string",
+                                "title": "Due date",
+                                "format": "date"
+                              },
+                              "tags": {
+                                "type": "array",
+                                "title": "Tags",
+                                "maxItems": 10,
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9-]+$",
+                                  "maxLength": 32
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "title": "ID",
+                                "readOnly": true
+                              },
+                              "status": {
+                                "type": "string",
+                                "title": "Status",
+                                "enum": [
+                                  "open",
+                                  "done"
+                                ],
+                                "x-display": {
+                                  "atom": "badge",
+                                  "tones": {
+                                    "open": "info",
+                                    "done": "success"
+                                  }
+                                }
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "title": "Created",
+                                "format": "date-time",
+                                "readOnly": true
+                              },
+                              "completedAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "title": "Completed",
+                                "format": "date-time",
+                                "readOnly": true
+                              }
+                            }
+                          }
+                        ],
+                        "required": [
+                          "id",
+                          "title",
+                          "priority",
+                          "status",
+                          "createdAt"
+                        ],
+                        "x-display": {
+                          "columns": [
+                            "title",
+                            "priority",
+                            "dueDate",
+                            "tags",
+                            "status"
+                          ]
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTodo",
+        "summary": "Create a todo",
+        "description": "Creates a new open todo.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "New todo",
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "What needs to be done.",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "maxLength": 1000
+                      },
+                      "priority": {
+                        "default": "medium",
+                        "type": "string",
+                        "title": "Priority",
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ],
+                        "x-display": {
+                          "atom": "badge",
+                          "tones": {
+                            "low": "neutral",
+                            "medium": "warning",
+                            "high": "danger"
+                          }
+                        }
+                      },
+                      "dueDate": {
+                        "type": "string",
+                        "title": "Due date",
+                        "format": "date"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "title": "Tags",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9-]+$",
+                          "maxLength": 32
+                        }
+                      }
+                    }
+                  }
+                ],
+                "required": [
+                  "title"
+                ],
+                "unevaluatedProperties": false,
+                "x-validations": [
+                  {
+                    "rule": "has(self.priority) && self.priority == 'high' ? has(self.dueDate) : true",
+                    "message": "High-priority todos must have a due date.",
+                    "fieldPath": ".dueDate"
+                  },
+                  {
+                    "rule": "!has(self.dueDate) || self.dueDate >= today",
+                    "message": "Due date cannot be in the past.",
+                    "fieldPath": ".dueDate"
+                  },
+                  {
+                    "rule": "!has(self.tags) || self.tags.all(t, size(self.tags.filter(x, x == t)) == 1)",
+                    "message": "Tags must be unique.",
+                    "fieldPath": ".tags"
+                  }
+                ],
+                "x-ui-schema": {
+                  "ui:order": [
+                    "title",
+                    "description",
+                    "priority",
+                    "dueDate",
+                    "tags"
+                  ],
+                  "title": {
+                    "ui:placeholder": "Buy milk",
+                    "ui:autofocus": true
+                  },
+                  "description": {
+                    "ui:widget": "textarea"
+                  },
+                  "tags": {
+                    "ui:options": {
+                      "orderable": false,
+                      "copyable": false
+                    },
+                    "items": {
+                      "ui:label": false,
+                      "ui:placeholder": "tag"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Todo",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "title": "Title",
+                          "description": "What needs to be done.",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "title": "Description",
+                          "maxLength": 1000
+                        },
+                        "priority": {
+                          "default": "medium",
+                          "type": "string",
+                          "title": "Priority",
+                          "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "low": "neutral",
+                              "medium": "warning",
+                              "high": "danger"
+                            }
+                          }
+                        },
+                        "dueDate": {
+                          "type": "string",
+                          "title": "Due date",
+                          "format": "date"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "title": "Tags",
+                          "maxItems": 10,
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9-]+$",
+                            "maxLength": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "ID",
+                          "readOnly": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "title": "Status",
+                          "enum": [
+                            "open",
+                            "done"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "open": "info",
+                              "done": "success"
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "title": "Created",
+                          "format": "date-time",
+                          "readOnly": true
+                        },
+                        "completedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Completed",
+                          "format": "date-time",
+                          "readOnly": true
+                        }
+                      }
+                    }
+                  ],
+                  "required": [
+                    "id",
+                    "title",
+                    "priority",
+                    "status",
+                    "createdAt"
+                  ],
+                  "x-display": {
+                    "columns": [
+                      "title",
+                      "priority",
+                      "dueDate",
+                      "tags",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/todos/archive": {
+      "post": {
+        "operationId": "archiveTodos",
+        "summary": "Archive completed todos",
+        "description": "Long-running: archives every done todo in the background. Answers 202 with an Operation to poll; its result says how many todos were archived.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:write"
+            ]
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Long-running: the work continues in the background. Poll the Operation at Location (also its href) until status is succeeded or failed.",
+            "headers": {
+              "Location": {
+                "description": "URL of the Operation to poll.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference"
+                }
+              },
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Operation",
+                  "description": "A long-running operation (AIP-151 style). Clients poll it until done.",
+                  "required": [
+                    "id",
+                    "href",
+                    "title",
+                    "status",
+                    "progress",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "ID",
+                      "readOnly": true
+                    },
+                    "href": {
+                      "type": "string",
+                      "title": "Poll URL",
+                      "format": "uri-reference",
+                      "readOnly": true
+                    },
+                    "title": {
+                      "type": "string",
+                      "title": "Operation"
+                    },
+                    "status": {
+                      "type": "string",
+                      "title": "Status",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "succeeded",
+                        "failed"
+                      ],
+                      "x-display": {
+                        "atom": "badge",
+                        "tones": {
+                          "pending": "neutral",
+                          "running": "info",
+                          "succeeded": "success",
+                          "failed": "danger"
+                        }
+                      }
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "title": "Progress",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "title": "Started",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "title": "Updated",
+                      "format": "date-time"
+                    },
+                    "result": {
+                      "type": "object",
+                      "title": "Result",
+                      "description": "Set when status is succeeded."
+                    },
+                    "error": {
+                      "description": "Set when status is failed, in the same RFC 9457 format as any error.",
+                      "type": "object",
+                      "required": [
+                        "type",
+                        "title",
+                        "status"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "format": "uri-reference"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "integer"
+                        },
+                        "detail": {
+                          "type": "string"
+                        },
+                        "instance": {
+                          "type": "string"
+                        },
+                        "errors": {
+                          "type": "array",
+                          "description": "Field-level validation errors (structural and semantic).",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "detail"
+                            ],
+                            "properties": {
+                              "pointer": {
+                                "type": "string",
+                                "description": "JSON Pointer to the offending field, e.g. /title."
+                              },
+                              "detail": {
+                                "type": "string"
+                              },
+                              "rule": {
+                                "type": "string",
+                                "description": "The CEL rule that failed (semantic errors only)."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "x-display": {
+                    "columns": [
+                      "title",
+                      "status",
+                      "progress",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/todos/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Todo identifier.",
+          "schema": {
+            "type": "string",
+            "pattern": "^todo-[a-z0-9]+$"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTodo",
+        "summary": "Get a todo",
+        "description": "Returns a single todo by ID.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Todo",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "title": "Title",
+                          "description": "What needs to be done.",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "title": "Description",
+                          "maxLength": 1000
+                        },
+                        "priority": {
+                          "default": "medium",
+                          "type": "string",
+                          "title": "Priority",
+                          "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "low": "neutral",
+                              "medium": "warning",
+                              "high": "danger"
+                            }
+                          }
+                        },
+                        "dueDate": {
+                          "type": "string",
+                          "title": "Due date",
+                          "format": "date"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "title": "Tags",
+                          "maxItems": 10,
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9-]+$",
+                            "maxLength": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "ID",
+                          "readOnly": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "title": "Status",
+                          "enum": [
+                            "open",
+                            "done"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "open": "info",
+                              "done": "success"
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "title": "Created",
+                          "format": "date-time",
+                          "readOnly": true
+                        },
+                        "completedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Completed",
+                          "format": "date-time",
+                          "readOnly": true
+                        }
+                      }
+                    }
+                  ],
+                  "required": [
+                    "id",
+                    "title",
+                    "priority",
+                    "status",
+                    "createdAt"
+                  ],
+                  "x-display": {
+                    "columns": [
+                      "title",
+                      "priority",
+                      "dueDate",
+                      "tags",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTodo",
+        "summary": "Delete a todo",
+        "description": "Permanently deletes a todo.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:write"
+            ]
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/todos/{id}/complete": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Todo identifier.",
+          "schema": {
+            "type": "string",
+            "pattern": "^todo-[a-z0-9]+$"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "completeTodo",
+        "summary": "Complete a todo",
+        "description": "Marks an open todo as done.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:write"
+            ]
+          }
+        ],
+        "x-preconditions": [
+          {
+            "rule": "self.status == 'open'",
+            "message": "Only open todos can be completed."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The completed todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Todo",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "title": "Title",
+                          "description": "What needs to be done.",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "title": "Description",
+                          "maxLength": 1000
+                        },
+                        "priority": {
+                          "default": "medium",
+                          "type": "string",
+                          "title": "Priority",
+                          "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "low": "neutral",
+                              "medium": "warning",
+                              "high": "danger"
+                            }
+                          }
+                        },
+                        "dueDate": {
+                          "type": "string",
+                          "title": "Due date",
+                          "format": "date"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "title": "Tags",
+                          "maxItems": 10,
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9-]+$",
+                            "maxLength": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "ID",
+                          "readOnly": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "title": "Status",
+                          "enum": [
+                            "open",
+                            "done"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "open": "info",
+                              "done": "success"
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "title": "Created",
+                          "format": "date-time",
+                          "readOnly": true
+                        },
+                        "completedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Completed",
+                          "format": "date-time",
+                          "readOnly": true
+                        }
+                      }
+                    }
+                  ],
+                  "required": [
+                    "id",
+                    "title",
+                    "priority",
+                    "status",
+                    "createdAt"
+                  ],
+                  "x-display": {
+                    "columns": [
+                      "title",
+                      "priority",
+                      "dueDate",
+                      "tags",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/todos/{id}/reopen": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Todo identifier.",
+          "schema": {
+            "type": "string",
+            "pattern": "^todo-[a-z0-9]+$"
+          }
+        }
+      ],
+      "post": {
+        "operationId": "reopenTodo",
+        "summary": "Reopen a todo",
+        "description": "Marks a done todo as open again.",
+        "tags": [
+          "todos"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "todos:write"
+            ]
+          }
+        ],
+        "x-preconditions": [
+          {
+            "rule": "self.status == 'done'",
+            "message": "Only completed todos can be reopened."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reopened todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Todo",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "title": "Title",
+                          "description": "What needs to be done.",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "description": {
+                          "type": "string",
+                          "title": "Description",
+                          "maxLength": 1000
+                        },
+                        "priority": {
+                          "default": "medium",
+                          "type": "string",
+                          "title": "Priority",
+                          "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "low": "neutral",
+                              "medium": "warning",
+                              "high": "danger"
+                            }
+                          }
+                        },
+                        "dueDate": {
+                          "type": "string",
+                          "title": "Due date",
+                          "format": "date"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "title": "Tags",
+                          "maxItems": 10,
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9-]+$",
+                            "maxLength": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "title": "ID",
+                          "readOnly": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "title": "Status",
+                          "enum": [
+                            "open",
+                            "done"
+                          ],
+                          "x-display": {
+                            "atom": "badge",
+                            "tones": {
+                              "open": "info",
+                              "done": "success"
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "title": "Created",
+                          "format": "date-time",
+                          "readOnly": true
+                        },
+                        "completedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Completed",
+                          "format": "date-time",
+                          "readOnly": true
+                        }
+                      }
+                    }
+                  ],
+                  "required": [
+                    "id",
+                    "title",
+                    "priority",
+                    "status",
+                    "createdAt"
+                  ],
+                  "x-display": {
+                    "columns": [
+                      "title",
+                      "priority",
+                      "dueDate",
+                      "tags",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations": {
+      "get": {
+        "operationId": "listOperations",
+        "summary": "List operations",
+        "description": "Returns a page of long-running operations, newest first.",
+        "tags": [
+          "operations"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "operations:read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of items per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Opaque cursor from a previous page's nextCursor.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status.",
+            "schema": {
+              "type": "string",
+              "title": "Status",
+              "enum": [
+                "pending",
+                "running",
+                "succeeded",
+                "failed"
+              ],
+              "x-display": {
+                "atom": "badge",
+                "tones": {
+                  "pending": "neutral",
+                  "running": "info",
+                  "succeeded": "success",
+                  "failed": "danger"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of operations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "title": "Operation",
+                        "description": "A long-running operation (AIP-151 style). Clients poll it until done.",
+                        "required": [
+                          "id",
+                          "href",
+                          "title",
+                          "status",
+                          "progress",
+                          "createdAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "title": "ID",
+                            "readOnly": true
+                          },
+                          "href": {
+                            "type": "string",
+                            "title": "Poll URL",
+                            "format": "uri-reference",
+                            "readOnly": true
+                          },
+                          "title": {
+                            "type": "string",
+                            "title": "Operation"
+                          },
+                          "status": {
+                            "type": "string",
+                            "title": "Status",
+                            "enum": [
+                              "pending",
+                              "running",
+                              "succeeded",
+                              "failed"
+                            ],
+                            "x-display": {
+                              "atom": "badge",
+                              "tones": {
+                                "pending": "neutral",
+                                "running": "info",
+                                "succeeded": "success",
+                                "failed": "danger"
+                              }
+                            }
+                          },
+                          "progress": {
+                            "type": "integer",
+                            "title": "Progress",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "title": "Started",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "title": "Updated",
+                            "format": "date-time"
+                          },
+                          "result": {
+                            "type": "object",
+                            "title": "Result",
+                            "description": "Set when status is succeeded."
+                          },
+                          "error": {
+                            "description": "Set when status is failed, in the same RFC 9457 format as any error.",
+                            "type": "object",
+                            "required": [
+                              "type",
+                              "title",
+                              "status"
+                            ],
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "format": "uri-reference"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "integer"
+                              },
+                              "detail": {
+                                "type": "string"
+                              },
+                              "instance": {
+                                "type": "string"
+                              },
+                              "errors": {
+                                "type": "array",
+                                "description": "Field-level validation errors (structural and semantic).",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "detail"
+                                  ],
+                                  "properties": {
+                                    "pointer": {
+                                      "type": "string",
+                                      "description": "JSON Pointer to the offending field, e.g. /title."
+                                    },
+                                    "detail": {
+                                      "type": "string"
+                                    },
+                                    "rule": {
+                                      "type": "string",
+                                      "description": "The CEL rule that failed (semantic errors only)."
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "x-display": {
+                          "columns": [
+                            "title",
+                            "status",
+                            "progress",
+                            "createdAt"
+                          ]
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations/{operationId}": {
+      "parameters": [
+        {
+          "name": "operationId",
+          "in": "path",
+          "required": true,
+          "description": "Operation identifier.",
+          "schema": {
+            "type": "string",
+            "pattern": "^op-[a-z0-9]+$"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getOperation",
+        "summary": "Get an operation",
+        "description": "Poll a long-running operation until its status is succeeded or failed.",
+        "tags": [
+          "operations"
+        ],
+        "x-mcp": true,
+        "security": [
+          {
+            "oauth2": [
+              "operations:read"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The operation.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Operation",
+                  "description": "A long-running operation (AIP-151 style). Clients poll it until done.",
+                  "required": [
+                    "id",
+                    "href",
+                    "title",
+                    "status",
+                    "progress",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "ID",
+                      "readOnly": true
+                    },
+                    "href": {
+                      "type": "string",
+                      "title": "Poll URL",
+                      "format": "uri-reference",
+                      "readOnly": true
+                    },
+                    "title": {
+                      "type": "string",
+                      "title": "Operation"
+                    },
+                    "status": {
+                      "type": "string",
+                      "title": "Status",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "succeeded",
+                        "failed"
+                      ],
+                      "x-display": {
+                        "atom": "badge",
+                        "tones": {
+                          "pending": "neutral",
+                          "running": "info",
+                          "succeeded": "success",
+                          "failed": "danger"
+                        }
+                      }
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "title": "Progress",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "title": "Started",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "title": "Updated",
+                      "format": "date-time"
+                    },
+                    "result": {
+                      "type": "object",
+                      "title": "Result",
+                      "description": "Set when status is succeeded."
+                    },
+                    "error": {
+                      "description": "Set when status is failed, in the same RFC 9457 format as any error.",
+                      "type": "object",
+                      "required": [
+                        "type",
+                        "title",
+                        "status"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "format": "uri-reference"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "integer"
+                        },
+                        "detail": {
+                          "type": "string"
+                        },
+                        "instance": {
+                          "type": "string"
+                        },
+                        "errors": {
+                          "type": "array",
+                          "description": "Field-level validation errors (structural and semantic).",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "detail"
+                            ],
+                            "properties": {
+                              "pointer": {
+                                "type": "string",
+                                "description": "JSON Pointer to the offending field, e.g. /title."
+                              },
+                              "detail": {
+                                "type": "string"
+                              },
+                              "rule": {
+                                "type": "string",
+                                "description": "The CEL rule that failed (semantic errors only)."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "x-display": {
+                    "columns": [
+                      "title",
+                      "status",
+                      "progress",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token (RFC 9457 problem).",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before polling again, or before retrying after a 429.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "RateLimit-Limit": {
+                "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests left in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error (RFC 9457 problem details).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "description": "RFC 9457 problem details, extended with field-level errors.",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "description": "OAuth2 / OIDC from the platform's identity provider. The web UI signs the user in (authorization code + PKCE); the CLI, MCP server and CI use client credentials in this demo (in production: device flow for the CLI, the MCP authorization spec for agents). The API checks the same token and scopes whichever client sent it.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "http://127.0.0.1:8787/oauth2/authorize",
+            "tokenUrl": "http://127.0.0.1:8787/oauth2/token",
+            "scopes": {
+              "todos:read": "Read todos",
+              "todos:write": "Create, change and archive todos",
+              "operations:read": "Poll long-running operations"
+            }
+          },
+          "clientCredentials": {
+            "tokenUrl": "http://127.0.0.1:8787/oauth2/token",
+            "scopes": {
+              "todos:read": "Read todos",
+              "todos:write": "Create, change and archive todos",
+              "operations:read": "Poll long-running operations"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "Location": {
+        "description": "URL of the Operation to poll.",
+        "schema": {
+          "type": "string",
+          "format": "uri-reference"
+        }
+      },
+      "RetryAfter": {
+        "description": "Seconds to wait before polling again, or before retrying after a 429.",
+        "schema": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "RateLimitLimit": {
+        "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimitRemaining": {
+        "description": "Requests left in the current window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimitReset": {
+        "description": "Seconds until the window resets.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "parameters": {
+      "OperationId": {
+        "name": "operationId",
+        "in": "path",
+        "required": true,
+        "description": "Operation identifier.",
+        "schema": {
+          "type": "string",
+          "pattern": "^op-[a-z0-9]+$"
+        }
+      },
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Todo identifier.",
+        "schema": {
+          "type": "string",
+          "pattern": "^todo-[a-z0-9]+$"
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "Maximum number of items per page.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "description": "Opaque cursor from a previous page's nextCursor.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Error (RFC 9457 problem details).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "description": "RFC 9457 problem details, extended with field-level errors.",
+              "required": [
+                "type",
+                "title",
+                "status"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "format": "uri-reference"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "integer"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "instance": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "description": "Field-level validation errors (structural and semantic).",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "detail"
+                    ],
+                    "properties": {
+                      "pointer": {
+                        "type": "string",
+                        "description": "JSON Pointer to the offending field, e.g. /title."
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "rule": {
+                        "type": "string",
+                        "description": "The CEL rule that failed (semantic errors only)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing, invalid or expired token (RFC 9457 problem).",
+        "headers": {
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "description": "RFC 9457 problem details, extended with field-level errors.",
+              "required": [
+                "type",
+                "title",
+                "status"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "format": "uri-reference"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "integer"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "instance": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "description": "Field-level validation errors (structural and semantic).",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "detail"
+                    ],
+                    "properties": {
+                      "pointer": {
+                        "type": "string",
+                        "description": "JSON Pointer to the offending field, e.g. /title."
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "rule": {
+                        "type": "string",
+                        "description": "The CEL rule that failed (semantic errors only)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The token lacks a scope this operation requires (RFC 9457 problem).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "description": "RFC 9457 problem details, extended with field-level errors.",
+              "required": [
+                "type",
+                "title",
+                "status"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "format": "uri-reference"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "integer"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "instance": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "description": "Field-level validation errors (structural and semantic).",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "detail"
+                    ],
+                    "properties": {
+                      "pointer": {
+                        "type": "string",
+                        "description": "JSON Pointer to the offending field, e.g. /title."
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "rule": {
+                        "type": "string",
+                        "description": "The CEL rule that failed (semantic errors only)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit exceeded (RFC 9457 problem). Wait Retry-After seconds.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before polling again, or before retrying after a 429.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "RateLimit-Limit": {
+            "description": "Requests allowed per window, per identity (IETF RateLimit headers).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "RateLimit-Remaining": {
+            "description": "Requests left in the current window.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "RateLimit-Reset": {
+            "description": "Seconds until the window resets.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "description": "RFC 9457 problem details, extended with field-level errors.",
+              "required": [
+                "type",
+                "title",
+                "status"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "format": "uri-reference"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "integer"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "instance": {
+                  "type": "string"
+                },
+                "errors": {
+                  "type": "array",
+                  "description": "Field-level validation errors (structural and semantic).",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "detail"
+                    ],
+                    "properties": {
+                      "pointer": {
+                        "type": "string",
+                        "description": "JSON Pointer to the offending field, e.g. /title."
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "rule": {
+                        "type": "string",
+                        "description": "The CEL rule that failed (semantic errors only)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Accepted": {
+        "description": "Long-running: the work continues in the background. Poll the Operation at Location (also its href) until status is succeeded or failed.",
+        "headers": {
+          "Location": {
+            "description": "URL of the Operation to poll.",
+            "schema": {
+              "type": "string",
+              "format": "uri-reference"
+            }
+          },
+          "Retry-After": {
+            "description": "Seconds to wait before polling again, or before retrying after a 429.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "title": "Operation",
+              "description": "A long-running operation (AIP-151 style). Clients poll it until done.",
+              "required": [
+                "id",
+                "href",
+                "title",
+                "status",
+                "progress",
+                "createdAt"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "title": "ID",
+                  "readOnly": true
+                },
+                "href": {
+                  "type": "string",
+                  "title": "Poll URL",
+                  "format": "uri-reference",
+                  "readOnly": true
+                },
+                "title": {
+                  "type": "string",
+                  "title": "Operation"
+                },
+                "status": {
+                  "type": "string",
+                  "title": "Status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "succeeded",
+                    "failed"
+                  ],
+                  "x-display": {
+                    "atom": "badge",
+                    "tones": {
+                      "pending": "neutral",
+                      "running": "info",
+                      "succeeded": "success",
+                      "failed": "danger"
+                    }
+                  }
+                },
+                "progress": {
+                  "type": "integer",
+                  "title": "Progress",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "createdAt": {
+                  "type": "string",
+                  "title": "Started",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "title": "Updated",
+                  "format": "date-time"
+                },
+                "result": {
+                  "type": "object",
+                  "title": "Result",
+                  "description": "Set when status is succeeded."
+                },
+                "error": {
+                  "description": "Set when status is failed, in the same RFC 9457 format as any error.",
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "x-display": {
+                "columns": [
+                  "title",
+                  "status",
+                  "progress",
+                  "createdAt"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Priority": {
+        "type": "string",
+        "title": "Priority",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "x-display": {
+          "atom": "badge",
+          "tones": {
+            "low": "neutral",
+            "medium": "warning",
+            "high": "danger"
+          }
+        }
+      },
+      "TodoStatus": {
+        "type": "string",
+        "title": "Status",
+        "enum": [
+          "open",
+          "done"
+        ],
+        "x-display": {
+          "atom": "badge",
+          "tones": {
+            "open": "info",
+            "done": "success"
+          }
+        }
+      },
+      "TodoFields": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "What needs to be done.",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "maxLength": 1000
+          },
+          "priority": {
+            "default": "medium",
+            "type": "string",
+            "title": "Priority",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "x-display": {
+              "atom": "badge",
+              "tones": {
+                "low": "neutral",
+                "medium": "warning",
+                "high": "danger"
+              }
+            }
+          },
+          "dueDate": {
+            "type": "string",
+            "title": "Due date",
+            "format": "date"
+          },
+          "tags": {
+            "type": "array",
+            "title": "Tags",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+$",
+              "maxLength": 32
+            }
+          }
+        }
+      },
+      "TodoCreate": {
+        "title": "New todo",
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "title": "Title",
+                "description": "What needs to be done.",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "description": {
+                "type": "string",
+                "title": "Description",
+                "maxLength": 1000
+              },
+              "priority": {
+                "default": "medium",
+                "type": "string",
+                "title": "Priority",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "x-display": {
+                  "atom": "badge",
+                  "tones": {
+                    "low": "neutral",
+                    "medium": "warning",
+                    "high": "danger"
+                  }
+                }
+              },
+              "dueDate": {
+                "type": "string",
+                "title": "Due date",
+                "format": "date"
+              },
+              "tags": {
+                "type": "array",
+                "title": "Tags",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$",
+                  "maxLength": 32
+                }
+              }
+            }
+          }
+        ],
+        "required": [
+          "title"
+        ],
+        "unevaluatedProperties": false,
+        "x-validations": [
+          {
+            "rule": "has(self.priority) && self.priority == 'high' ? has(self.dueDate) : true",
+            "message": "High-priority todos must have a due date.",
+            "fieldPath": ".dueDate"
+          },
+          {
+            "rule": "!has(self.dueDate) || self.dueDate >= today",
+            "message": "Due date cannot be in the past.",
+            "fieldPath": ".dueDate"
+          },
+          {
+            "rule": "!has(self.tags) || self.tags.all(t, size(self.tags.filter(x, x == t)) == 1)",
+            "message": "Tags must be unique.",
+            "fieldPath": ".tags"
+          }
+        ],
+        "x-ui-schema": {
+          "ui:order": [
+            "title",
+            "description",
+            "priority",
+            "dueDate",
+            "tags"
+          ],
+          "title": {
+            "ui:placeholder": "Buy milk",
+            "ui:autofocus": true
+          },
+          "description": {
+            "ui:widget": "textarea"
+          },
+          "tags": {
+            "ui:options": {
+              "orderable": false,
+              "copyable": false
+            },
+            "items": {
+              "ui:label": false,
+              "ui:placeholder": "tag"
+            }
+          }
+        }
+      },
+      "Todo": {
+        "title": "Todo",
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "title": "Title",
+                "description": "What needs to be done.",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "description": {
+                "type": "string",
+                "title": "Description",
+                "maxLength": 1000
+              },
+              "priority": {
+                "default": "medium",
+                "type": "string",
+                "title": "Priority",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "x-display": {
+                  "atom": "badge",
+                  "tones": {
+                    "low": "neutral",
+                    "medium": "warning",
+                    "high": "danger"
+                  }
+                }
+              },
+              "dueDate": {
+                "type": "string",
+                "title": "Due date",
+                "format": "date"
+              },
+              "tags": {
+                "type": "array",
+                "title": "Tags",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$",
+                  "maxLength": 32
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "title": "ID",
+                "readOnly": true
+              },
+              "status": {
+                "type": "string",
+                "title": "Status",
+                "enum": [
+                  "open",
+                  "done"
+                ],
+                "x-display": {
+                  "atom": "badge",
+                  "tones": {
+                    "open": "info",
+                    "done": "success"
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "title": "Created",
+                "format": "date-time",
+                "readOnly": true
+              },
+              "completedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Completed",
+                "format": "date-time",
+                "readOnly": true
+              }
+            }
+          }
+        ],
+        "required": [
+          "id",
+          "title",
+          "priority",
+          "status",
+          "createdAt"
+        ],
+        "x-display": {
+          "columns": [
+            "title",
+            "priority",
+            "dueDate",
+            "tags",
+            "status"
+          ]
+        }
+      },
+      "TodoPage": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "title": "Todo",
+              "allOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "What needs to be done.",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "description": {
+                      "type": "string",
+                      "title": "Description",
+                      "maxLength": 1000
+                    },
+                    "priority": {
+                      "default": "medium",
+                      "type": "string",
+                      "title": "Priority",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ],
+                      "x-display": {
+                        "atom": "badge",
+                        "tones": {
+                          "low": "neutral",
+                          "medium": "warning",
+                          "high": "danger"
+                        }
+                      }
+                    },
+                    "dueDate": {
+                      "type": "string",
+                      "title": "Due date",
+                      "format": "date"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "title": "Tags",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9-]+$",
+                        "maxLength": 32
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "ID",
+                      "readOnly": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "title": "Status",
+                      "enum": [
+                        "open",
+                        "done"
+                      ],
+                      "x-display": {
+                        "atom": "badge",
+                        "tones": {
+                          "open": "info",
+                          "done": "success"
+                        }
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "title": "Created",
+                      "format": "date-time",
+                      "readOnly": true
+                    },
+                    "completedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "title": "Completed",
+                      "format": "date-time",
+                      "readOnly": true
+                    }
+                  }
+                }
+              ],
+              "required": [
+                "id",
+                "title",
+                "priority",
+                "status",
+                "createdAt"
+              ],
+              "x-display": {
+                "columns": [
+                  "title",
+                  "priority",
+                  "dueDate",
+                  "tags",
+                  "status"
+                ]
+              }
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OperationStatus": {
+        "type": "string",
+        "title": "Status",
+        "enum": [
+          "pending",
+          "running",
+          "succeeded",
+          "failed"
+        ],
+        "x-display": {
+          "atom": "badge",
+          "tones": {
+            "pending": "neutral",
+            "running": "info",
+            "succeeded": "success",
+            "failed": "danger"
+          }
+        }
+      },
+      "Operation": {
+        "type": "object",
+        "title": "Operation",
+        "description": "A long-running operation (AIP-151 style). Clients poll it until done.",
+        "required": [
+          "id",
+          "href",
+          "title",
+          "status",
+          "progress",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "ID",
+            "readOnly": true
+          },
+          "href": {
+            "type": "string",
+            "title": "Poll URL",
+            "format": "uri-reference",
+            "readOnly": true
+          },
+          "title": {
+            "type": "string",
+            "title": "Operation"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "x-display": {
+              "atom": "badge",
+              "tones": {
+                "pending": "neutral",
+                "running": "info",
+                "succeeded": "success",
+                "failed": "danger"
+              }
+            }
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "createdAt": {
+            "type": "string",
+            "title": "Started",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "title": "Updated",
+            "format": "date-time"
+          },
+          "result": {
+            "type": "object",
+            "title": "Result",
+            "description": "Set when status is succeeded."
+          },
+          "error": {
+            "description": "Set when status is failed, in the same RFC 9457 format as any error.",
+            "type": "object",
+            "required": [
+              "type",
+              "title",
+              "status"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "format": "uri-reference"
+              },
+              "title": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "instance": {
+                "type": "string"
+              },
+              "errors": {
+                "type": "array",
+                "description": "Field-level validation errors (structural and semantic).",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ],
+                  "properties": {
+                    "pointer": {
+                      "type": "string",
+                      "description": "JSON Pointer to the offending field, e.g. /title."
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "rule": {
+                      "type": "string",
+                      "description": "The CEL rule that failed (semantic errors only)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-display": {
+          "columns": [
+            "title",
+            "status",
+            "progress",
+            "createdAt"
+          ]
+        }
+      },
+      "OperationPage": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "title": "Operation",
+              "description": "A long-running operation (AIP-151 style). Clients poll it until done.",
+              "required": [
+                "id",
+                "href",
+                "title",
+                "status",
+                "progress",
+                "createdAt"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "title": "ID",
+                  "readOnly": true
+                },
+                "href": {
+                  "type": "string",
+                  "title": "Poll URL",
+                  "format": "uri-reference",
+                  "readOnly": true
+                },
+                "title": {
+                  "type": "string",
+                  "title": "Operation"
+                },
+                "status": {
+                  "type": "string",
+                  "title": "Status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "succeeded",
+                    "failed"
+                  ],
+                  "x-display": {
+                    "atom": "badge",
+                    "tones": {
+                      "pending": "neutral",
+                      "running": "info",
+                      "succeeded": "success",
+                      "failed": "danger"
+                    }
+                  }
+                },
+                "progress": {
+                  "type": "integer",
+                  "title": "Progress",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "createdAt": {
+                  "type": "string",
+                  "title": "Started",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "title": "Updated",
+                  "format": "date-time"
+                },
+                "result": {
+                  "type": "object",
+                  "title": "Result",
+                  "description": "Set when status is succeeded."
+                },
+                "error": {
+                  "description": "Set when status is failed, in the same RFC 9457 format as any error.",
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "format": "uri-reference"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "description": "Field-level validation errors (structural and semantic).",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "detail"
+                        ],
+                        "properties": {
+                          "pointer": {
+                            "type": "string",
+                            "description": "JSON Pointer to the offending field, e.g. /title."
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string",
+                            "description": "The CEL rule that failed (semantic errors only)."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "x-display": {
+                "columns": [
+                  "title",
+                  "status",
+                  "progress",
+                  "createdAt"
+                ]
+              }
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "RFC 9457 problem details, extended with field-level errors.",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "description": "Field-level validation errors (structural and semantic).",
+            "items": {
+              "type": "object",
+              "required": [
+                "detail"
+              ],
+              "properties": {
+                "pointer": {
+                  "type": "string",
+                  "description": "JSON Pointer to the offending field, e.g. /title."
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string",
+                  "description": "The CEL rule that failed (semantic errors only)."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

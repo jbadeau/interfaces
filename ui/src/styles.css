@@ -1,0 +1,66 @@
+/*
+ * Layout only. Colors come from design tokens (packages/design/src/tokens.json)
+ * emitted as CSS variables by <ThemeStyle/>: --tone-*, --bg, --card, --fg, --muted, --line.
+ */
+:root { color-scheme: light dark; font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); }
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+h1 { margin: 0 0 4px; font-size: 24px; }
+h2 { margin: 0 0 12px; font-size: 16px; }
+.muted { color: var(--muted); }
+code { background: color-mix(in srgb, var(--tone-accent) 14%, transparent); padding: 1px 5px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 340px 1fr; gap: 16px; margin-top: 16px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; overflow-x: auto; }
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.toolbar h2 { margin: 0 auto 0 0; }
+.toolbar label { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; width: 100%; }
+.toolbar select { width: auto; }
+textarea { min-height: 70px; }
+
+/* ---- atoms (shared vocabulary with terminal + MCP renderers) ---- */
+.atom-badge { display: inline-block; white-space: nowrap; color: var(--t); background: color-mix(in srgb, var(--t) 13%, transparent); border-radius: 999px; padding: 0 9px; font-size: 12px; font-weight: 500; }
+.atom-tag { display: inline-block; color: var(--tone-accent); margin-right: 6px; font-size: 13px; }
+.atom-empty { color: var(--muted); }
+.atom-button { font: inherit; font-size: 13px; color: var(--t); background: transparent; border: 1px solid color-mix(in srgb, var(--t) 45%, transparent); border-radius: 6px; padding: 3px 10px; cursor: pointer; margin-left: 4px; }
+.atom-button:hover:not(:disabled) { background: color-mix(in srgb, var(--t) 12%, transparent); }
+.atom-button:disabled { opacity: .3; cursor: not-allowed; }
+.atom-table { width: 100%; border-collapse: collapse; }
+.atom-table th, .atom-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.atom-table th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.atom-table .actions { white-space: nowrap; text-align: right; }
+tr.status-done td[data-col="title"] { text-decoration: line-through; color: var(--muted); }
+
+/* ---- RJSF default markup mapped onto the same tokens ---- */
+.rjsf fieldset { border: 0; padding: 0; margin: 0; }
+.rjsf legend { display: none; }
+.form-group { margin-bottom: 12px; }
+.control-label { display: block; font-weight: 500; margin-bottom: 4px; }
+.field-description { color: var(--muted); font-size: 12px; margin: 0 0 4px; }
+.has-error input, .has-error select, .has-error textarea { border-color: var(--tone-danger); }
+.error-detail { list-style: none; padding: 0; margin: 4px 0 0; color: var(--tone-danger); font-size: 12px; }
+.error-detail li::before { content: '› '; }
+.array-item { display: flex; gap: 6px; align-items: start; }
+.array-item > .col-xs-9 { flex: 1; }
+.array-item-toolbox .btn-group { display: flex; }
+.rjsf .btn { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--fg); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+.array-item-move-up, .array-item-move-down, .array-item-copy { display: none !important; }
+.rjsf .btn-add { color: var(--tone-accent); }
+.rjsf button[type="submit"] { background: var(--tone-accent); color: #fff; border: 0; border-radius: 6px; padding: 7px 18px; font: inherit; font-weight: 500; cursor: pointer; }
+.glyphicon-plus::before { content: '+ add tag'; font-style: normal; }
+.glyphicon-remove::before { content: '×'; font-style: normal; }
+.toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 16px; border-radius: 8px; color: #fff; max-width: 420px; }
+.toast.ok { background: var(--tone-success); } .toast.error { background: var(--tone-danger); }
+
+.toast.progress { background: var(--card); color: var(--fg); border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0,0,0,.12); min-width: 340px; }
+.progress-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.progress-head .op-title { flex: 1; } .progress-head b { font-variant-numeric: tabular-nums; }
+.progress-bar { height: 6px; border-radius: 3px; background: rgba(0,0,0,.08); overflow: hidden; }
+.progress-bar i { display: block; height: 100%; background: var(--tone-info); transition: width .5s ease; }
+
+.whoami { float: right; display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.signin { display: grid; place-items: center; min-height: 80vh; }
+.signin .card { max-width: 440px; }
+.signin p { margin: 8px 0 18px; }

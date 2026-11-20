@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "todos": {
+      "command": "node",
+      "args": ["--no-warnings", "mcp/src/server.ts"],
+      "env": { "API_URL": "http://127.0.0.1:8787" }
+    }
+  }
+}
