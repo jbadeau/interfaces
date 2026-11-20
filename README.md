@@ -4,6 +4,10 @@ A working demo of **API-first platform interfaces**: one OpenAPI 3.1 document
 (whose schemas are JSON Schema 2020-12) drives a service, a React UI, a CLI and
 an MCP server — with shared **semantic validation** and a shared **design system**.
 
+**Watch the demo:** [`demo/demo.mp4`](demo/demo.mp4) (10 min, narrated): why the
+API comes first for an internal developer platform, a tour of the contract, then
+the same API in the web UI, the CLI, the MCP server and an agent (Claude Code).
+
 The domain is the classic Todos API.
 
 ```

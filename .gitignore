@@ -2,6 +2,7 @@ node_modules/
 .idea/
 dist/
 demo/*.mp4
+!demo/demo.mp4
 demo/*.gif
 # machine-local Restish profile (recreate with: npm run cli:connect)
 cli/restish.json
